@@ -169,24 +169,55 @@ class AgileApp {
             // Fetch from API if no cache or force refresh
             if (!rates && this.isOnline) {
                 console.log('Agile App: Fetching from API...');
-                rates = await this.api.fetchAgileRates(region, today);
-                
-                if (rates && rates.length > 0) {
-                    this.storage.setCachedRates(region, today, rates);
+                try {
+                    // Try today first
+                    rates = await this.api.fetchAgileRates(region, today);
+                    console.log('Agile App: API response for today:', rates ? `${rates.length} rates` : 'null/undefined');
+                    
+                    // If today returns no data, try yesterday
+                    if (!rates || rates.length === 0) {
+                        console.log('Agile App: No data for today, trying yesterday...');
+                        const yesterday = new Date(today);
+                        yesterday.setDate(yesterday.getDate() - 1);
+                        
+                        rates = await this.api.fetchAgileRates(region, yesterday);
+                        console.log('Agile App: API response for yesterday:', rates ? `${rates.length} rates` : 'null/undefined');
+                        
+                        if (rates && rates.length > 0) {
+                            this.storage.setCachedRates(region, yesterday, rates);
+                            console.log('Agile App: Using yesterday\'s data as fallback');
+                        }
+                    } else if (rates && rates.length > 0) {
+                        this.storage.setCachedRates(region, today, rates);
+                    }
+                    
+                    if (!rates || rates.length === 0) {
+                        console.warn('Agile App: API returned empty data for both today and yesterday');
+                    }
+                } catch (apiError) {
+                    console.error('Agile App: API call failed:', apiError);
+                    rates = null;
                 }
             }
             
             // Fall back to offline data
-            if (!rates) {
+            if (!rates || rates.length === 0) {
                 console.log('Agile App: Using offline fallback');
                 rates = this.storage.getOfflineFallback();
                 
-                if (!rates) {
-                    throw new Error('No data available');
+                if (!rates || rates.length === 0) {
+                    throw new Error('No pricing data available. Please check your internet connection and try again.');
                 }
                 
                 this.showOfflineIndicator();
             }
+            
+            // Validate data before processing
+            if (!Array.isArray(rates) || rates.length === 0) {
+                throw new Error('Invalid pricing data format received');
+            }
+            
+            console.log('Agile App: Processing', rates.length, 'rate periods');
             
             // Process and display the data
             this.currentData = this.processor.analyzeRates(rates);
