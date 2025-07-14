@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Eco-friendly background -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2D5A27;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#87A96B;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="leafGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#A8D5BA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E8F5E8;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="url(#bgGradient)"/>
+  
+  <!-- Leaf shape -->
+  <path d="M 256 80 Q 320 120 360 200 Q 380 280 320 360 Q 280 400 256 420 Q 232 400 192 360 Q 132 280 152 200 Q 192 120 256 80 Z" 
+        fill="url(#leafGradient)" 
+        stroke="#2D5A27" 
+        stroke-width="4"/>
+  
+  <!-- Leaf vein -->
+  <path d="M 256 100 Q 280 160 300 220 Q 310 280 280 340 Q 268 360 256 380"
+        fill="none" 
+        stroke="#2D5A27" 
+        stroke-width="3" 
+        stroke-linecap="round"/>
+  
+  <!-- Lightning bolt (energy symbol) -->
+  <path d="M 280 180 L 240 220 L 260 220 L 240 280 L 280 240 L 260 240 Z"
+        fill="#1E3A8A" 
+        stroke="#DBEAFE" 
+        stroke-width="2"/>
+  
+  <!-- Price indicator circles -->
+  <circle cx="200" cy="320" r="12" fill="#A8D5BA" stroke="#2D5A27" stroke-width="2"/>
+  <circle cx="230" cy="340" r="8" fill="#FCD34D" stroke="#F59E0B" stroke-width="2"/>
+  <circle cx="280" cy="340" r="8" fill="#FCA5A5" stroke="#F87171" stroke-width="2"/>
+</svg>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Octopus Agile - Smart Energy Pricing</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#2D5A27">
+    <meta name="description" content="Real-time Octopus Energy Agile pricing with smart recommendations for when to use electricity">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Agile Pricing">
+    
+    <!-- Favicon and Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+    
+    <!-- Preload Critical Resources -->
+    <link rel="preload" href="css/styles.css" as="style">
+    <link rel="preload" href="js/app.js" as="script">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Loading smart pricing...</p>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app" class="app" style="display: none;">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="app-title">
+                <span class="icon-leaf">🌱</span>
+                Agile Pricing
+            </h1>
+            <button id="region-btn" class="region-btn" aria-label="Change region">
+                <span id="current-region">C</span>
+            </button>
+        </header>
+
+        <!-- Error Message -->
+        <div id="error-message" class="error-message" style="display: none;">
+            <div class="error-content">
+                <span class="error-icon">⚠️</span>
+                <p id="error-text">Unable to load pricing data</p>
+                <button id="retry-btn" class="retry-btn">Try Again</button>
+            </div>
+        </div>
+
+        <!-- Hero Section -->
+        <main class="main-content">
+            <!-- Current Status Card -->
+            <section class="hero-section">
+                <div id="current-status" class="status-card">
+                    <div class="status-indicator">
+                        <span id="status-icon" class="status-icon">⚡</span>
+                        <h2 id="status-text" class="status-text">LOADING...</h2>
+                    </div>
+                    <div class="price-display">
+                        <span id="current-price" class="current-price">--.-</span>
+                        <span class="price-unit">p/kWh</span>
+                    </div>
+                    <div id="time-remaining" class="time-remaining">
+                        Loading time slot...
+                    </div>
+                </div>
+
+                <!-- Smart Delay Helper -->
+                <div id="delay-helper" class="delay-helper">
+                    <h3 class="delay-title">💡 Smart Delay</h3>
+                    <div id="delay-recommendation" class="delay-recommendation">
+                        Calculating best time...
+                    </div>
+                    <div class="device-presets">
+                        <button class="preset-btn" data-duration="1.5">Washing</button>
+                        <button class="preset-btn" data-duration="2">Dishwasher</button>
+                        <button class="preset-btn" data-duration="8">EV Charge</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick Decision Panels -->
+            <section class="decision-panels">
+                <!-- Best Times -->
+                <div class="panel best-times-panel">
+                    <h3 class="panel-title">
+                        <span class="panel-icon">🌱</span>
+                        Best Times Today
+                    </h3>
+                    <div id="best-times" class="time-slots">
+                        <div class="loading-placeholder">Loading...</div>
+                    </div>
+                </div>
+
+                <!-- Avoid Times -->
+                <div class="panel avoid-times-panel">
+                    <h3 class="panel-title">
+                        <span class="panel-icon">⚠️</span>
+                        Avoid These Times
+                    </h3>
+                    <div id="avoid-times" class="time-slots">
+                        <div class="loading-placeholder">Loading...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Visual Timeline -->
+            <section class="timeline-section">
+                <h3 class="section-title">Today's Pricing Timeline</h3>
+                <div id="price-timeline" class="price-timeline">
+                    <div class="timeline-loading">Loading timeline...</div>
+                </div>
+                <div id="timeline-legend" class="timeline-legend">
+                    <div class="legend-item">
+                        <div class="legend-color legend-cheap"></div>
+                        <span>Cheap</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-medium"></div>
+                        <span>Medium</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-expensive"></div>
+                        <span>Expensive</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Summary Stats -->
+            <section class="stats-section">
+                <h3 class="section-title">Today's Summary</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Range</span>
+                        <span id="price-range" class="stat-value">--.-p</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Average</span>
+                        <span id="average-price" class="stat-value">--.-p</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Current Rank</span>
+                        <span id="current-rank" class="stat-value">-/48</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p class="data-source">Data from Octopus Energy API</p>
+                <p id="last-updated" class="last-updated">Last updated: --:--</p>
+                <button id="refresh-btn" class="refresh-btn" aria-label="Refresh data">
+                    <span class="refresh-icon">🔄</span>
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Region Selection Modal -->
+    <div id="region-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3 class="modal-title">Select Your Region</h3>
+            <div class="region-grid" id="region-grid">
+                <!-- Populated by JavaScript -->
+            </div>
+            <button id="close-modal" class="close-btn">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Offline Indicator -->
+    <div id="offline-indicator" class="offline-indicator" style="display: none;">
+        <span class="offline-icon">📡</span>
+        <span>Offline - Using cached data</span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/dataProcessor.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/app.js"></script>
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

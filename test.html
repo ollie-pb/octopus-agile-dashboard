@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+</head>
+<body>
+    <h1>Octopus API Test</h1>
+    <div id="results"></div>
+    
+    <script src="js/api.js"></script>
+    <script>
+        async function testAPI() {
+            const api = new OctopusAPI();
+            const results = document.getElementById('results');
+            
+            try {
+                results.innerHTML = '<p>Testing London (C)...</p>';
+                const londonRates = await api.fetchAgileRates('C');
+                console.log('London rates:', londonRates);
+                
+                results.innerHTML += '<p>Testing Yorkshire (M)...</p>';
+                const yorkshireRates = await api.fetchAgileRates('M');
+                console.log('Yorkshire rates:', yorkshireRates);
+                
+                results.innerHTML += `
+                    <h3>Results:</h3>
+                    <p>London: ${londonRates.length} rates fetched</p>
+                    <p>Yorkshire: ${yorkshireRates.length} rates fetched</p>
+                    <p>Sample London rate: ${londonRates[0]?.value_inc_vat}p at ${londonRates[0]?.valid_from}</p>
+                    <p>Sample Yorkshire rate: ${yorkshireRates[0]?.value_inc_vat}p at ${yorkshireRates[0]?.valid_from}</p>
+                `;
+            } catch (error) {
+                results.innerHTML += `<p style="color: red;">Error: ${error.message}</p>`;
+                console.error('Test failed:', error);
+            }
+        }
+        
+        testAPI();
+    </script>
+</body>
+</html>

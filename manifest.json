@@ -1,0 +1,140 @@
+{
+  "name": "Octopus Agile Smart Pricing Dashboard",
+  "short_name": "Agile Pricing",
+  "description": "Real-time Octopus Energy Agile pricing with smart recommendations for when to use electricity",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFBEB",
+  "theme_color": "#2D5A27",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-GB",
+  "dir": "ltr",
+  "categories": ["utilities", "productivity", "lifestyle"],
+  "screenshots": [
+    {
+      "src": "assets/icons/screenshot-mobile.png",
+      "sizes": "375x812",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mobile view of the pricing dashboard"
+    }
+  ],
+  "icons": [
+    {
+      "src": "assets/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "assets/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Current Pricing",
+      "short_name": "Now",
+      "description": "View current electricity pricing status",
+      "url": "/?view=current",
+      "icons": [
+        {
+          "src": "assets/icons/shortcut-current.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Best Times",
+      "short_name": "Best",
+      "description": "View today's cheapest electricity times",
+      "url": "/?view=best",
+      "icons": [
+        {
+          "src": "assets/icons/shortcut-best.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Delay Calculator",
+      "short_name": "Delay",
+      "description": "Calculate optimal device start time",
+      "url": "/?view=delay",
+      "icons": [
+        {
+          "src": "assets/icons/shortcut-delay.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
+}
