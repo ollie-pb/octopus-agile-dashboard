@@ -114,7 +114,7 @@ class DataProcessor {
     }
 
     /**
-     * Calculate delay recommendation for optimal pricing
+     * Calculate delay recommendation for optimal pricing (future-only)
      * @param {Array} rates - Array of rate objects
      * @param {Date} currentTime - Current time
      * @param {number} durationHours - Duration device will run (in hours)
@@ -125,29 +125,54 @@ class DataProcessor {
             return { recommendation: 'No data available' };
         }
 
-        const analysis = this.analyzeRates(rates);
-        const currentPrice = this.getCurrentSlotStatus(rates, currentTime).value_inc_vat || 0;
+        const currentSlot = this.getCurrentSlotStatus(rates, currentTime);
+        const currentPrice = currentSlot.value_inc_vat || 0;
 
-        // Find the next cheap slot after current time
-        const futureSlots = rates.filter(rate => new Date(rate.valid_from) > currentTime);
-        const cheapFutureSlots = futureSlots
-            .filter(rate => rate.value_inc_vat <= analysis.statistics.minPrice + 0.05) // Within 5p of minimum
-            .sort((a, b) => new Date(a.valid_from) - new Date(b.valid_from));
+        // Only consider future slots (remaining day)
+        const futureSlots = rates.filter(rate => {
+            const slotStart = new Date(rate.valid_from);
+            return slotStart > currentTime;
+        });
 
-        if (cheapFutureSlots.length === 0) {
+        if (futureSlots.length === 0) {
             return { 
-                recommendation: 'No cheaper slots found today',
+                recommendation: 'No more slots today',
                 currentPrice: currentPrice
             };
         }
 
-        const nextCheapSlot = cheapFutureSlots[0];
+        // Find cheapest remaining slots
+        const sortedFutureSlots = [...futureSlots].sort((a, b) => a.value_inc_vat - b.value_inc_vat);
+        const cheapestFuturePrice = sortedFutureSlots[0].value_inc_vat;
+
+        // If current price is already near the cheapest remaining, use now
+        if (currentPrice <= cheapestFuturePrice + 0.02) { // Within 2p
+            return {
+                recommendation: 'Use now - good price',
+                currentPrice: currentPrice,
+                delayHours: 0
+            };
+        }
+
+        // Find next significantly cheaper slot
+        const nextCheapSlot = sortedFutureSlots.find(slot => 
+            slot.value_inc_vat < currentPrice - 0.02 // At least 2p cheaper
+        );
+
+        if (!nextCheapSlot) {
+            return {
+                recommendation: 'Use now - prices won\'t improve much',
+                currentPrice: currentPrice,
+                delayHours: 0
+            };
+        }
+
         const delayUntil = new Date(nextCheapSlot.valid_from);
         const delayHours = (delayUntil - currentTime) / (1000 * 60 * 60);
         const savings = (currentPrice - nextCheapSlot.value_inc_vat) * durationHours;
 
         return {
-            recommendation: `Start in ${Math.round(delayHours * 10) / 10} hours`,
+            recommendation: `Wait ${Math.round(delayHours * 10) / 10} hours`,
             delayUntil: this.convertToLocalTime(nextCheapSlot.valid_from),
             currentPrice: currentPrice,
             recommendedPrice: nextCheapSlot.value_inc_vat,
