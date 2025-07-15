@@ -65,30 +65,42 @@ class AgileApp {
             errorText: document.getElementById('error-text'),
             retryBtn: document.getElementById('retry-btn'),
             
-            // Region selection
+            // Header elements
             currentRegion: document.getElementById('current-region'),
             regionBtn: document.getElementById('region-btn'),
             regionModal: document.getElementById('region-modal'),
             regionGrid: document.getElementById('region-grid'),
             closeModal: document.getElementById('close-modal'),
             
-            // Main card elements
+            // Status card elements
             currentStatus: document.getElementById('current-status'),
             statusIcon: document.getElementById('status-icon'),
             statusText: document.getElementById('status-text'),
             currentPrice: document.getElementById('current-price'),
             timeRemaining: document.getElementById('time-remaining'),
             
-            // Recommendation section
-            recommendationText: document.getElementById('recommendation-text'),
+            // Delay helper elements
+            delayRecommendation: document.getElementById('delay-recommendation'),
+            presetBtns: document.querySelectorAll('.preset-btn'),
             
-            // Details section
+            // Decision panels
+            bestTimes: document.getElementById('best-times'),
+            avoidTimes: document.getElementById('avoid-times'),
+            
+            // Timeline elements
+            priceTimeline: document.getElementById('price-timeline'),
+            
+            // Stats elements
             priceRange: document.getElementById('price-range'),
-            nextCheap: document.getElementById('next-cheap'),
+            averagePrice: document.getElementById('average-price'),
+            currentRank: document.getElementById('current-rank'),
             
-            // Footer
+            // Footer elements
             lastUpdated: document.getElementById('last-updated'),
-            refreshBtn: document.getElementById('refresh-btn')
+            refreshBtn: document.getElementById('refresh-btn'),
+            
+            // Offline indicator
+            offlineIndicator: document.getElementById('offline-indicator')
         };
     }
 
@@ -102,6 +114,14 @@ class AgileApp {
         // Region selection
         this.elements.regionBtn?.addEventListener('click', () => this.showRegionModal());
         this.elements.closeModal?.addEventListener('click', () => this.hideRegionModal());
+        
+        // Device preset buttons
+        this.elements.presetBtns?.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const duration = parseFloat(btn.dataset.duration);
+                this.selectDuration(duration);
+            });
+        });
         
         // Refresh button
         this.elements.refreshBtn?.addEventListener('click', () => this.loadData(true));
@@ -150,24 +170,46 @@ class AgileApp {
             if (!rates && this.isOnline) {
                 console.log('Agile App: Fetching from API...');
                 try {
+                    // Try today first
                     rates = await this.api.fetchAgileRates(region, today);
                     console.log('Agile App: API response for today:', rates ? `${rates.length} rates` : 'null/undefined');
                     
-                    if (rates && rates.length > 0) {
+                    // If today returns no data, try yesterday
+                    if (!rates || rates.length === 0) {
+                        console.log('Agile App: No data for today, trying yesterday...');
+                        const yesterday = new Date(today);
+                        yesterday.setDate(yesterday.getDate() - 1);
+                        
+                        rates = await this.api.fetchAgileRates(region, yesterday);
+                        console.log('Agile App: API response for yesterday:', rates ? `${rates.length} rates` : 'null/undefined');
+                        
+                        if (rates && rates.length > 0) {
+                            this.storage.setCachedRates(region, yesterday, rates);
+                            console.log('Agile App: Using yesterday\'s data as fallback');
+                        }
+                    } else if (rates && rates.length > 0) {
                         this.storage.setCachedRates(region, today, rates);
-                    } else {
-                        console.warn('Agile App: No current pricing data available');
-                        throw new Error('Today\'s pricing data is not available yet. Rates are typically published around 4-8pm the day before.');
+                    }
+                    
+                    if (!rates || rates.length === 0) {
+                        console.warn('Agile App: API returned empty data for both today and yesterday');
                     }
                 } catch (apiError) {
                     console.error('Agile App: API call failed:', apiError);
-                    throw apiError;
+                    rates = null;
                 }
             }
             
-            // Check if we have valid current data
+            // Fall back to offline data
             if (!rates || rates.length === 0) {
-                throw new Error('No current pricing data available. Please try again later when today\'s rates are published.');
+                console.log('Agile App: Using offline fallback');
+                rates = this.storage.getOfflineFallback();
+                
+                if (!rates || rates.length === 0) {
+                    throw new Error('No pricing data available. Please check your internet connection and try again.');
+                }
+                
+                this.showOfflineIndicator();
             }
             
             // Validate data before processing
@@ -200,11 +242,17 @@ class AgileApp {
             // Update current status
             this.updateCurrentStatus();
             
-            // Update recommendation
-            this.updateRecommendation();
+            // Update delay recommendation
+            this.updateDelayRecommendation();
             
-            // Update details section
-            this.updateDetails();
+            // Update decision panels
+            this.updateDecisionPanels();
+            
+            // Update timeline
+            this.updateTimeline();
+            
+            // Update statistics
+            this.updateStatistics();
             
             // Update region display
             this.updateRegionDisplay();
@@ -215,7 +263,7 @@ class AgileApp {
     }
 
     /**
-     * Update current status section
+     * Update current status card
      */
     updateCurrentStatus() {
         const currentStatus = this.processor.getCurrentSlotStatus(
@@ -240,15 +288,15 @@ class AgileApp {
                     `${currentStatus.timeRemaining} minutes remaining`;
             }
             
-            // Update status section styling
-            this.elements.currentStatus.className = `status-section ${currentStatus.status}`;
+            // Update status card styling
+            this.elements.currentStatus.className = `status-card ${currentStatus.status}`;
         }
     }
 
     /**
-     * Update recommendation section
+     * Update delay recommendation
      */
-    updateRecommendation() {
+    updateDelayRecommendation() {
         const recommendation = this.processor.calculateDelayRecommendation(
             this.currentData.allSlots.map(slot => ({
                 value_inc_vat: slot.value_inc_vat,
@@ -256,43 +304,109 @@ class AgileApp {
                 valid_to: slot.valid_to
             })),
             new Date(),
-            2 // Default 2-hour duration
+            this.selectedDuration
         );
         
         if (recommendation.delayHours !== undefined && recommendation.delayHours > 0) {
             const savingsText = recommendation.savings > 0 ? 
                 ` (save ${recommendation.savings.toFixed(1)}p)` : '';
             
-            this.elements.recommendationText.textContent = 
-                `Wait ${recommendation.delayHours}h for cheaper rate${savingsText}`;
+            this.elements.delayRecommendation.innerHTML = `
+                <strong>${recommendation.recommendation}</strong><br>
+                Next cheap slot: ${recommendation.timeSlot}${savingsText}
+            `;
         } else {
-            this.elements.recommendationText.textContent = 'Use electricity now - good price!';
+            this.elements.delayRecommendation.textContent = 'Use electricity now - good price!';
         }
     }
 
     /**
-     * Update details section (expandable)
+     * Update decision panels (best/worst times)
      */
-    updateDetails() {
+    updateDecisionPanels() {
+        // Update best times
+        this.elements.bestTimes.innerHTML = '';
+        this.currentData.cheapestSlots.slice(0, 5).forEach(slot => {
+            const timeSlot = document.createElement('div');
+            timeSlot.className = 'time-slot cheap';
+            timeSlot.innerHTML = `
+                <span class="slot-time">${slot.timeSlot}</span>
+                <span class="slot-price cheap">${slot.value_inc_vat.toFixed(1)}p</span>
+            `;
+            this.elements.bestTimes.appendChild(timeSlot);
+        });
+        
+        // Update avoid times
+        this.elements.avoidTimes.innerHTML = '';
+        this.currentData.mostExpensiveSlots.slice(0, 5).forEach(slot => {
+            const timeSlot = document.createElement('div');
+            timeSlot.className = 'time-slot expensive';
+            timeSlot.innerHTML = `
+                <span class="slot-time">${slot.timeSlot}</span>
+                <span class="slot-price expensive">${slot.value_inc_vat.toFixed(1)}p</span>
+            `;
+            this.elements.avoidTimes.appendChild(timeSlot);
+        });
+    }
+
+    /**
+     * Update price timeline visualization
+     */
+    updateTimeline() {
+        this.elements.priceTimeline.innerHTML = '';
+        
+        const currentTime = new Date();
+        
+        this.currentData.allSlots.forEach(slot => {
+            const bar = document.createElement('div');
+            bar.className = `timeline-bar ${slot.category}`;
+            
+            // Check if this is the current time slot
+            const validFrom = new Date(slot.valid_from);
+            const validTo = new Date(slot.valid_to);
+            if (currentTime >= validFrom && currentTime < validTo) {
+                bar.classList.add('current');
+            }
+            
+            // Add click handler for price details
+            bar.addEventListener('click', () => {
+                alert(`${slot.timeSlot}\n${slot.value_inc_vat.toFixed(1)}p/kWh`);
+            });
+            
+            bar.title = `${slot.timeSlot}: ${slot.value_inc_vat.toFixed(1)}p`;
+            
+            this.elements.priceTimeline.appendChild(bar);
+        });
+    }
+
+    /**
+     * Update statistics section
+     */
+    updateStatistics() {
         const stats = this.currentData.statistics;
         
-        // Update price range
         this.elements.priceRange.textContent = 
             `${stats.minPrice.toFixed(1)}p - ${stats.maxPrice.toFixed(1)}p`;
         
-        // Get future cheap slots only
-        const currentTime = new Date();
-        const futureSlots = this.currentData.cheapestSlots.filter(slot => {
-            const slotTime = new Date(slot.valid_from);
-            return slotTime > currentTime;
-        }).slice(0, 3); // Show next 3 cheap slots
+        this.elements.averagePrice.textContent = 
+            `${stats.avgPrice.toFixed(1)}p`;
         
-        if (futureSlots.length > 0) {
-            this.elements.nextCheap.innerHTML = futureSlots.map(slot => 
-                `${slot.timeSlot} (${slot.value_inc_vat.toFixed(1)}p)`
-            ).join(', ');
-        } else {
-            this.elements.nextCheap.textContent = 'No more cheap slots today';
+        // Calculate current price rank
+        const currentStatus = this.processor.getCurrentSlotStatus(
+            this.currentData.allSlots.map(slot => ({
+                value_inc_vat: slot.value_inc_vat,
+                valid_from: slot.valid_from,
+                valid_to: slot.valid_to
+            }))
+        );
+        
+        if (currentStatus) {
+            const sortedPrices = this.currentData.allSlots
+                .map(slot => slot.value_inc_vat)
+                .sort((a, b) => a - b);
+            
+            const rank = sortedPrices.indexOf(currentStatus.value_inc_vat) + 1;
+            this.elements.currentRank.textContent = `${rank}/48`;
         }
     }
 
@@ -304,6 +418,23 @@ class AgileApp {
         this.elements.currentRegion.textContent = region;
     }
 
+    /**
+     * Select device duration preset
+     */
+    selectDuration(duration) {
+        this.selectedDuration = duration;
+        
+        // Update button states
+        this.elements.presetBtns.forEach(btn => {
+            btn.classList.remove('active');
+            if (parseFloat(btn.dataset.duration) === duration) {
+                btn.classList.add('active');
+            }
+        });
+        
+        // Update delay recommendation
+        this.updateDelayRecommendation();
+    }
 
     /**
      * Show region selection modal
