@@ -113,44 +113,40 @@
                 </div>
             </section>
 
-            <!-- Visual Timeline -->
+            <!-- Visual Timeline (Collapsible) -->
             <section class="timeline-section">
-                <h3 class="section-title">Today's Pricing Timeline</h3>
-                <div id="price-timeline" class="price-timeline">
-                    <div class="timeline-loading">Loading timeline...</div>
-                </div>
-                <div id="timeline-legend" class="timeline-legend">
-                    <div class="legend-item">
-                        <div class="legend-color legend-cheap"></div>
-                        <span>Cheap</span>
+                <details class="timeline-details">
+                    <summary class="timeline-summary">
+                        <h3 class="section-title">Today's Pricing Timeline</h3>
+                        <span class="expand-icon">▼</span>
+                    </summary>
+                    <div class="timeline-content">
+                        <div id="price-timeline" class="price-timeline">
+                            <div class="timeline-loading">Loading timeline...</div>
+                        </div>
+                        <div id="timeline-legend" class="timeline-legend">
+                            <div class="legend-item">
+                                <div class="legend-color legend-cheap"></div>
+                                <span>Cheap</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color legend-medium"></div>
+                                <span>Medium</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color legend-expensive"></div>
+                                <span>Expensive</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="legend-item">
-                        <div class="legend-color legend-medium"></div>
-                        <span>Medium</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color legend-expensive"></div>
-                        <span>Expensive</span>
-                    </div>
-                </div>
+                </details>
             </section>
 
-            <!-- Summary Stats -->
+            <!-- Price Range Summary -->
             <section class="stats-section">
-                <h3 class="section-title">Today's Summary</h3>
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <span class="stat-label">Range</span>
-                        <span id="price-range" class="stat-value">--.-p</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Average</span>
-                        <span id="average-price" class="stat-value">--.-p</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Current Rank</span>
-                        <span id="current-rank" class="stat-value">-/48</span>
-                    </div>
+                <div class="range-summary">
+                    <span class="range-label">Today's Range:</span>
+                    <span id="price-range" class="range-value">--.-p</span>
                 </div>
             </section>
         </main>

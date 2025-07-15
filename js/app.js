@@ -92,8 +92,6 @@ class AgileApp {
             
             // Stats elements
             priceRange: document.getElementById('price-range'),
-            averagePrice: document.getElementById('average-price'),
-            currentRank: document.getElementById('current-rank'),
             
             // Footer elements
             lastUpdated: document.getElementById('last-updated'),
@@ -170,46 +168,24 @@ class AgileApp {
             if (!rates && this.isOnline) {
                 console.log('Agile App: Fetching from API...');
                 try {
-                    // Try today first
                     rates = await this.api.fetchAgileRates(region, today);
                     console.log('Agile App: API response for today:', rates ? `${rates.length} rates` : 'null/undefined');
                     
-                    // If today returns no data, try yesterday
-                    if (!rates || rates.length === 0) {
-                        console.log('Agile App: No data for today, trying yesterday...');
-                        const yesterday = new Date(today);
-                        yesterday.setDate(yesterday.getDate() - 1);
-                        
-                        rates = await this.api.fetchAgileRates(region, yesterday);
-                        console.log('Agile App: API response for yesterday:', rates ? `${rates.length} rates` : 'null/undefined');
-                        
-                        if (rates && rates.length > 0) {
-                            this.storage.setCachedRates(region, yesterday, rates);
-                            console.log('Agile App: Using yesterday\'s data as fallback');
-                        }
-                    } else if (rates && rates.length > 0) {
+                    if (rates && rates.length > 0) {
                         this.storage.setCachedRates(region, today, rates);
-                    }
-                    
-                    if (!rates || rates.length === 0) {
-                        console.warn('Agile App: API returned empty data for both today and yesterday');
+                    } else {
+                        console.warn('Agile App: No current pricing data available');
+                        throw new Error('Today\'s pricing data is not available yet. Rates are typically published around 4-8pm the day before.');
                     }
                 } catch (apiError) {
                     console.error('Agile App: API call failed:', apiError);
-                    rates = null;
+                    throw apiError;
                 }
             }
             
-            // Fall back to offline data
+            // Check if we have valid current data
             if (!rates || rates.length === 0) {
-                console.log('Agile App: Using offline fallback');
-                rates = this.storage.getOfflineFallback();
-                
-                if (!rates || rates.length === 0) {
-                    throw new Error('No pricing data available. Please check your internet connection and try again.');
-                }
-                
-                this.showOfflineIndicator();
+                throw new Error('No current pricing data available. Please try again later when today\'s rates are published.');
             }
             
             // Validate data before processing
@@ -387,27 +363,6 @@ class AgileApp {
         
         this.elements.priceRange.textContent = 
             `${stats.minPrice.toFixed(1)}p - ${stats.maxPrice.toFixed(1)}p`;
-        
-        this.elements.averagePrice.textContent = 
-            `${stats.avgPrice.toFixed(1)}p`;
-        
-        // Calculate current price rank
-        const currentStatus = this.processor.getCurrentSlotStatus(
-            this.currentData.allSlots.map(slot => ({
-                value_inc_vat: slot.value_inc_vat,
-                valid_from: slot.valid_from,
-                valid_to: slot.valid_to
-            }))
-        );
-        
-        if (currentStatus) {
-            const sortedPrices = this.currentData.allSlots
-                .map(slot => slot.value_inc_vat)
-                .sort((a, b) => a - b);
-            
-            const rank = sortedPrices.indexOf(currentStatus.value_inc_vat) + 1;
-            this.elements.currentRank.textContent = `${rank}/48`;
-        }
     }
 
     /**

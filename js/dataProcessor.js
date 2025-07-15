@@ -21,14 +21,23 @@ class DataProcessor {
             throw new Error('No rates data provided');
         }
 
+        const currentTime = new Date();
+        
+        // Filter out past slots, keeping current and future only
+        const futureRates = rates.filter(rate => {
+            const slotEnd = new Date(rate.valid_to);
+            return slotEnd > currentTime;
+        });
+
         // Sort rates by price
         const sortedByPrice = [...rates].sort((a, b) => a.value_inc_vat - b.value_inc_vat);
+        const sortedFutureByPrice = [...futureRates].sort((a, b) => a.value_inc_vat - b.value_inc_vat);
         
-        // Get cheapest and most expensive periods
-        const cheapestSlots = sortedByPrice.slice(0, 5);
-        const mostExpensiveSlots = sortedByPrice.slice(-5).reverse();
+        // Get cheapest and most expensive periods (3 each for cleaner UI)
+        const cheapestSlots = sortedFutureByPrice.slice(0, 3);
+        const mostExpensiveSlots = sortedFutureByPrice.slice(-3).reverse();
 
-        // Calculate statistics
+        // Calculate statistics from all rates (for context)
         const prices = rates.map(rate => rate.value_inc_vat);
         const minPrice = Math.min(...prices);
         const maxPrice = Math.max(...prices);
@@ -59,7 +68,8 @@ class DataProcessor {
                 avgPrice: Math.round(avgPrice * 100) / 100,
                 priceRange: Math.round((maxPrice - minPrice) * 100) / 100
             },
-            allSlots: categorizedSlots
+            allSlots: categorizedSlots,
+            futureSlots: futureRates.length
         };
     }
 
